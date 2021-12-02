@@ -6,12 +6,25 @@ const puppeteer = require("puppeteer");
 
 const app = express();
 
+
+
 require("./db");
+
+const router = require('express').Router();
+
+//const { Film } = require("../../db");
+
+const { Film } = require("./db");
+
+//const film = require('./models/films');
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use("/api", apiRouter);
+
+
+
 
 // Launching the Puppeteer controlled headless browser and navigate to the Digimon website
 const total = 2;
@@ -41,10 +54,27 @@ for (let index = 1; index < total; index++) {
         const [page2] = await browser.pages();
         await page2.goto("https://todotorrents.net" + hrefs1[index2]);
         //page2.goto(hrefs1[index2]);
-        await page2.waitForTimeout(500);
+        await page2.waitForTimeout(700);
         // call and wait extractedEvaluateCall and concatenate results every iteration.
         // You can use results.push, but will get collection of collections at the end of iteration
-        results = results.concat(await extractedEvaluateCall(page2));
+
+        //results = results.concat(await extractedEvaluateCall(page2));
+    //     Film.create({
+    //       title:"dd",
+    //       description: "DFDFD",
+    //       releaseYear: "1221"
+    // })
+    
+         let tabla = [];
+         tabla = await extractedEvaluateCall(page2);
+             Film.create({
+          title:tabla.title,
+          description: tabla.description,
+          releaseYear: tabla.releaseYear
+    })
+        // console.log("kkk"+tabla.toString());
+        
+    
         //console.log("tpta"+results);
       }
       console.log("RESULTADOS" + results);
@@ -82,10 +112,13 @@ for (let index = 1; index < total; index++) {
 
 
 async function extractedEvaluateCall(page) {
+  
+  
   // just extracted same exact logic in separate function
   // this function should use async keyword in order to work and take page as argument
-
+  //const { Film } = require("./db");
   return page.evaluate(() => {
+
     let title = document.querySelector(".card-body h2")?.innerText || "No title";
     let description = document.querySelector(".text-justify").innerText;
     let picture = document.querySelectorAll(".card-body > img");
@@ -100,6 +133,20 @@ async function extractedEvaluateCall(page) {
     ).toString();
     let urlWeb = document.location.href;
 
+
+    
+    
+  
+    // (async () => {
+    //   await sequelize.sync();
+    //   const jane = await Film.create({
+    //     title: 'janedoe',
+    //     description: "DFDFD",
+    //     releaseYear: "1221"
+    //   });
+    //   console.log(jane.toJSON());
+    // })();
+
     return {
       title,
       description,
@@ -111,8 +158,11 @@ async function extractedEvaluateCall(page) {
       torrent,
       urlWeb,
     };
+    
+    
 
   });
+  
 }
 
 
@@ -120,3 +170,4 @@ async function extractedEvaluateCall(page) {
 app.listen(3000, () => {
   console.log("Listening on port 3000");
 });
+

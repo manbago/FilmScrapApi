@@ -14,7 +14,7 @@ module.exports = (sequelize, type) => {
             allowNull: false
         },
         releaseYear: {
-            type: type.INTEGER,
+            type: type.STRING,
             allowNull: false
         }
     }, {
