@@ -23,7 +23,7 @@
 // }
 
 module.exports = (sequelize, type) => {
-    return sequelize.define('film', {
+    return sequelize.define('films', {
         id: {
             type: type.INTEGER,
             primaryKey: true,

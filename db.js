@@ -11,7 +11,8 @@ const sequelize = new Sequelize('filmBD', 'manbago', 'rostro', {
 const Film = FilmModel(sequelize, Sequelize);
 const User = UserModel(sequelize, Sequelize);
 
-sequelize.sync({ force: true })
+//sequelize.sync({ force: true })
+sequelize.sync()
 .then(() => {
     console.log('Database & tables created!');
 });
