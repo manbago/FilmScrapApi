@@ -70,8 +70,15 @@ for (let index = 1; index < total; index++) {
              Film.create({
           title:tabla.title,
           description: tabla.description,
-          releaseYear: tabla.releaseYear
-    })
+          imagen : tabla.imagen,
+          releaseYear: tabla.releaseYear,
+          playersFilm: tabla.playersFilm,
+          format: tabla.format,
+          size: tabla.size,
+          torrent: tabla.torrent,
+          urlWeb: tabla.urlWeb,
+        });
+          
         // console.log("kkk"+tabla.toString());
         
     
