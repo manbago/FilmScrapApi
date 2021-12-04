@@ -15,7 +15,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use("/api", apiRouter);
 
 // Launching the Puppeteer controlled headless browser and navigate to the Digimon website
-const total = 25;
+const total = 1;
 let hrefsTotal = [];
 var results = [];
 
@@ -50,25 +50,22 @@ for (let index = 1; index < total; index++) {
         // call and wait extractedEvaluateCall and concatenate results every iteration.
         // You can use results.push, but will get collection of collections at the end of iteration
 
-    
+        // Evitar añadir inserciones duplicadas en Test
          let tabla = [];
-         tabla = await extractedEvaluateCall(page);
-             Film.create({
-          title:tabla.title,
-          description: tabla.description,
-          imagen : tabla.imagen,
-          releaseYear: tabla.releaseYear,
-          playersFilm: tabla.playersFilm,
-          format: tabla.format,
-          size: tabla.size,
-          torrent: tabla.torrent,
-          urlWeb: tabla.urlWeb,
-        });
-        //await page2.close();
-        // console.log("kkk"+tabla.toString());
-        
-    
-        //console.log("tpta"+results);
+        //  tabla = await extractedEvaluateCall(page);
+        //      Film.create({
+        //   title:tabla.title,
+        //   description: tabla.description,
+        //   imagen : tabla.imagen,
+        //   releaseYear: tabla.releaseYear,
+        //   playersFilm: tabla.playersFilm,
+        //   format: tabla.format,
+        //   size: tabla.size,
+        //   torrent: tabla.torrent,
+        //   urlWeb: tabla.urlWeb,
+        // });
+
+
       }
       console.log("RESULTADOS" + results);
 
