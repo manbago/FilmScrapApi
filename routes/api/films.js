@@ -20,7 +20,7 @@ router.get("/", async (req, res) => {
     page = pageAsNumber;
   }
 
-  let size = 10;
+  let size = 24;
   if (sizeAsNumber > 0 && sizeAsNumber < 100) {
     console.log("sizeAsNumber", sizeAsNumber);
     size = sizeAsNumber;
@@ -102,5 +102,14 @@ router.get("/search", async (req, res) => {
     totalFilms: data.count,
   });
 });
+
+
+router.get("/:filmId", async (req, res) => {
+  console.log(req.params.filmId);
+  const film = await Film.findByPk(req.params.filmId);
+  console.log(film);
+  res.send(film);
+});
+
 
 module.exports = router;
