@@ -1,44 +1,49 @@
-const router = require('express').Router();
+const router = require("express").Router();
 
 const { Film } = require("../../db");
-const Sequelize = require('sequelize');
+const Sequelize = require("sequelize");
 const Op = Sequelize.Op;
 
-
-
-
 router.get("/", async (req, res) => {
+  const pageAsNumber = parseInt(req.query.page);
+  const sizeAsNumber = parseInt(req.query.size);
 
-    const pageAsNumber = parseInt(req.query.page);
-    const sizeAsNumber = parseInt(req.query.size);
+  let page = 0;
+  if (!Number.isNaN(pageAsNumber) && pageAsNumber > 0) {
+    page = pageAsNumber;
+  }
 
-    let page=0;
-    if (!Number.isNaN(pageAsNumber) && pageAsNumber>0) {
-        page = pageAsNumber;
-    }
+  let size = 10;
+  if (sizeAsNumber > 0 && sizeAsNumber < 100) {
+    console.log("sizeAsNumber", sizeAsNumber);
+    size = sizeAsNumber;
+  }
 
-     let size=10;
-    if (sizeAsNumber > 0 && sizeAsNumber < 100){
-        console.log("sizeAsNumber", sizeAsNumber);
-        size = sizeAsNumber;
-    }
-
-      const data = await Film.findAndCountAll({ 
-        atributes: ['id', 'title', 'description', 'imagen', 'releaseYear', 'playersFilm', 'format', 'size', 'torrent','urlWeb'],
-        limit: size,
-        offset: page * size
-       })
-
-    //res.status(200).json(data)
-    res.send({
-        content: data.rows,
-        totalPages: Math.ceil(data.count / size),
-        totalFilms: data.count,
-        thisPage: page
-    })
-    
+  const data = await Film.findAndCountAll({
+    atributes: [
+      "id",
+      "title",
+      "description",
+      "imagen",
+      "releaseYear",
+      "playersFilm",
+      "format",
+      "size",
+      "torrent",
+      "urlWeb",
+    ],
+    limit: size,
+    offset: page * size,
   });
 
+  //res.status(200).json(data)
+  res.send({
+    content: data.rows,
+    totalPages: Math.ceil(data.count / size),
+    totalFilms: data.count,
+    thisPage: page,
+  });
+});
 
 // router.get("/", async (req, res) => {
 //     console.log(req.usuarioId);
@@ -46,39 +51,49 @@ router.get("/", async (req, res) => {
 //     res.json(films);
 // });
 
-
-
 router.post("/", async (req, res) => {
-
-    const film = await Film.create(req.body);
-    res.json(film);
-
+  const film = await Film.create(req.body);
+  res.json(film);
 });
 
-router.put("/:filmId", async(req, res) => {
-    await Film.update(req.body, {
-        where: { id: req.params.filmId }
-    });
-    res.json({ success: "se ha modificado" })
+router.put("/:filmId", async (req, res) => {
+  await Film.update(req.body, {
+    where: { id: req.params.filmId },
+  });
+  res.json({ success: "se ha modificado" });
 });
 
-router.delete("/:filmId", async(req, res) => {
-    await Film.destroy({
-        where: { id: req.params.filmId }
-    });
-    res.json({ success: "se ha eliminado" });
-});  
+router.delete("/:filmId", async (req, res) => {
+  await Film.destroy({
+    where: { id: req.params.filmId },
+  });
+  res.json({ success: "se ha eliminado" });
+});
 
 router.get("/search", async (req, res) => {
-    let { term } = req.query;
+  let { term } = req.query;
+  term = term.toLowerCase();
 
-    term = term.toLowerCase();
-
-    Film.findAll({
-        where: { title: { [Op.like]: `%${term}%` } } })
-        .then(films => res.send(films))
-        .catch(error => res.send(error));
-
+  const data = await Film.findAndCountAll({
+    atributes: [
+      "id",
+      "title",
+      "description",
+      "imagen",
+      "releaseYear",
+      "playersFilm",
+      "format",
+      "size",
+      "torrent",
+      "urlWeb",
+    ],
+    where: { title: { [Op.like]: `%${term}%` } },
+  });
+  //res.status(200).json(data)
+  res.send({
+    content: data.rows,
+    totalFilms: data.count,
+  });
 });
 
 module.exports = router;
