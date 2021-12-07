@@ -4,6 +4,13 @@ const { Film } = require("../../db");
 const Sequelize = require("sequelize");
 const Op = Sequelize.Op;
 
+const cors = require('cors');
+router.use(cors({
+    origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002'],
+}));
+
+
+
 router.get("/", async (req, res) => {
   const pageAsNumber = parseInt(req.query.page);
   const sizeAsNumber = parseInt(req.query.size);
