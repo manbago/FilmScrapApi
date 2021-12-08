@@ -4,12 +4,16 @@ const { Film } = require("../../db");
 const Sequelize = require("sequelize");
 const Op = Sequelize.Op;
 
-const cors = require('cors');
-router.use(cors({
-    origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002'],
-}));
-
-
+const cors = require("cors");
+router.use(
+  cors({
+    origin: [
+      "http://localhost:3000",
+      "http://localhost:3001",
+      "http://localhost:3002",
+    ],
+  })
+);
 
 router.get("/", async (req, res) => {
   const pageAsNumber = parseInt(req.query.page);
@@ -43,7 +47,6 @@ router.get("/", async (req, res) => {
     offset: page * size,
   });
 
-  //res.status(200).json(data)
   res.send({
     content: data.rows,
     totalPages: Math.ceil(data.count / size),
@@ -51,12 +54,6 @@ router.get("/", async (req, res) => {
     thisPage: page,
   });
 });
-
-// router.get("/", async (req, res) => {
-//     console.log(req.usuarioId);
-//     const films = await Film.findAll({limit:10, offset:0})
-//     res.json(films);
-// });
 
 router.post("/", async (req, res) => {
   const film = await Film.create(req.body);
@@ -79,7 +76,7 @@ router.delete("/:filmId", async (req, res) => {
 
 router.get("/search", async (req, res) => {
   let { term } = req.query;
-  term = term.toLowerCase();
+  //term = term.toLowerCase();
 
   const data = await Film.findAndCountAll({
     atributes: [
@@ -96,13 +93,12 @@ router.get("/search", async (req, res) => {
     ],
     where: { title: { [Op.like]: `%${term}%` } },
   });
-  //res.status(200).json(data)
+
   res.send({
     content: data.rows,
     totalFilms: data.count,
   });
 });
-
 
 router.get("/:filmId", async (req, res) => {
   console.log(req.params.filmId);
@@ -110,6 +106,5 @@ router.get("/:filmId", async (req, res) => {
   console.log(film);
   res.send(film);
 });
-
 
 module.exports = router;
