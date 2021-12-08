@@ -3,7 +3,7 @@ const Sequelize = require('sequelize');
 const FilmModel = require('./models/films');
 const UserModel = require('./models/users');
 
-const sequelize = new Sequelize('filmBD', 'manbago', 'rostro', {
+const sequelize = new Sequelize('filmbd', 'manbago', 'rostro', {
     host: 'localhost',
     dialect: 'mysql',
 });

@@ -11,6 +11,10 @@ module.exports = (sequelize, type) => {
         type: type.STRING,
         allowNull: false,
       },
+      type: {
+        type: type.STRING,
+        allowNull: true,
+      },
       description: {
         type: type.STRING,
         allowNull: false,
@@ -29,7 +33,7 @@ module.exports = (sequelize, type) => {
       },
       format: {
         type: type.STRING,
-        allowNull: true,
+        primaryKey: true,
       },
       size: {
         type: type.STRING,

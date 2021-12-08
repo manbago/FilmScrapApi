@@ -31,6 +31,7 @@ router.get("/", async (req, res) => {
   }
 
   const data = await Film.findAndCountAll({
+    order: [["id", "DESC"]],
     atributes: [
       "id",
       "title",
