@@ -2,6 +2,7 @@ const Sequelize = require('sequelize');
 
 const FilmModel = require('./models/films');
 const UserModel = require('./models/users');
+const DocModel = require('./models/documentales');
 
 const sequelize = new Sequelize('filmbd', 'manbago', 'rostro', {
     host: 'localhost',
@@ -10,6 +11,7 @@ const sequelize = new Sequelize('filmbd', 'manbago', 'rostro', {
 
 const Film = FilmModel(sequelize, Sequelize);
 const User = UserModel(sequelize, Sequelize);
+const Doc = DocModel(sequelize, Sequelize);
 
 //sequelize.sync({ force: true })
 sequelize.sync()
@@ -20,4 +22,5 @@ sequelize.sync()
 module.exports = {
     Film,
     User,
+    Doc,
 };

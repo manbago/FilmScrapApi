@@ -7,6 +7,7 @@ require("./db");
 const app = express();
 const router = require("express").Router();
 const { Film } = require("./db");
+const { Doc } = require("./db");
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -21,7 +22,7 @@ const total = 1; // Number of pages to be scraped
 // var results = [];
 let TotalCreadas = [];
 
-let scraptHD = true;
+let scraptHD = false;
 let scraptNEW = true;
 
 if (scraptHD) {
@@ -53,7 +54,7 @@ if (scraptHD) {
           await page.waitForTimeout(500);
 
           let filmHD = [];
-          filmHD = await extractedFilmHDEvaluateCall(page);
+          filmHD = await extractedFilmHD(page);
           createFilmHD(filmHD);
         }
 
@@ -64,8 +65,7 @@ if (scraptHD) {
     })();
   } //fin for
   
-
-} // fin scraping HD
+} // fin IF scraping HD
 
 if (scraptNEW) {
   console.log("Inicializando scraptNEW...");
@@ -83,16 +83,27 @@ if (scraptNEW) {
         )
       );
 
-      // console.log(hrefs2);
+      console.log(hrefs2);
 
-      for (let index2 = 0; index2 < 15; index2++) {
+      for (let index2 = 0; index2 < hrefs2.length; index2++) {
         // -- recorro las primeras 15 peliculas novedades
         await page2.goto("https://todotorrents.net/" + hrefs2[index2]);
         await page2.waitForTimeout(500);
 
-        let filmNEW = [];
-        filmNEW = await extractedFilmHDEvaluateCall(page2);
-        createFilmHD(filmNEW);
+        let componentNEW = [];
+        
+        if (hrefs2[index2].includes("pelicula")) {
+          componentNEW = await extractedFilmHD(page2);
+          createFilmHD(componentNEW);
+        } 
+        if (hrefs2[index2].includes("serie")) {
+          componentNEW = await extractedFilmSERIE(page2);
+          createFilmSERIE(componentNEW);
+        }
+        else {
+          console.log("es una serie o musica");
+          
+        }
       } // fin for
 
       await browser2.close();
@@ -101,10 +112,10 @@ if (scraptNEW) {
     }
   })();
   console.log("scraptNEW Finalizado...");
-} // fin scraping NEW
+} // fin IF scraping NEW
 
 
-async function extractedFilmHDEvaluateCall(page) {
+async function extractedFilmHD(page) {
   // just extracted same exact logic in separate function
   // this function should use async keyword in order to work and take page as argument
   return page.evaluate(() => {
@@ -147,6 +158,45 @@ async function extractedFilmHDEvaluateCall(page) {
   });
 }
 
+async function extractedFilmSERIE(page) {
+  // just extracted same exact logic in separate function
+  // this function should use async keyword in order to work and take page as argument
+  return page.evaluate(() => {
+    let title =
+      document.querySelector(".card-body h2")?.innerText || "No title";
+    let description = document.querySelector(".text-justify").innerText;
+    let picture = document.querySelectorAll(".card-body > img");
+    let imagen = picture[0].src;
+    let format =
+      document.querySelector(".text-center .d-inline-block p")?.innerText ||
+      "No format";
+    let torrent = Array.from(
+      document.querySelectorAll(".text-center a[href]"),
+      (a) => a.getAttribute("href")
+    ).toString();
+    let urlWeb = document.location.href;
+
+    let type_temp = urlWeb.substring(
+      urlWeb.indexOf(".net/") + 5,
+      urlWeb.lastIndexOf("/") - 6
+    );
+
+    let type = type_temp.substring(0, type_temp.lastIndexOf("/"));
+
+    return {
+      title,
+      type,
+      description,
+      imagen,
+      format,
+
+      torrent,
+      urlWeb,
+    };
+  });
+}
+
+
 
 function createFilmHD(tabla) {
   Film.findOrCreate({
@@ -182,6 +232,37 @@ function createFilmHD(tabla) {
   
 }
 
+
+function createFilmSERIE(tabla) {
+  Doc.findOrCreate({
+    where: {
+      title: tabla.title,
+      format: tabla.format.replace("Formato:", ""),
+    },
+    defaults: {
+      // set the default properties if it doesn't exist
+      title: tabla.title,
+      type: tabla.type,
+      description: tabla.description.replace("Descripción:", ""),
+      imagen: tabla.imagen,
+      format: tabla.format.replace("Formato:", ""),
+      torrent: tabla.torrent,
+      urlWeb: tabla.urlWeb,
+    },
+  }).then(function (result) {
+    var author = result[0], // the instance of the author
+      created = result[1]; // boolean stating if it was created or not
+
+    if (!created) {
+      // false if author already exists and was not created.
+      console.log("Doc already exists");
+    } else {
+      console.log("Doc created...");
+      TotalCreadas = TotalCreadas.concat(tabla);
+    }
+  });
+  
+}
 
 // Making Express listen on port 7000
 app.listen(3000, () => {
