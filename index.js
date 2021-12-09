@@ -1,13 +1,11 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const apiRouter = require("./routes/api");
-
 const puppeteer = require("puppeteer");
 require("./db");
 
 const app = express();
 const router = require("express").Router();
-
 const { Film } = require("./db");
 
 app.use(bodyParser.json());
@@ -17,99 +15,98 @@ app.use("/api", apiRouter);
 const Sequelize = require("sequelize");
 const Op = Sequelize.Op;
 
-// Launching the Puppeteer controlled headless browser and navigate to the Digimon website
+// Launching the Puppeteer controlled headless browser and navigate to the website
 const total = 1; // Number of pages to be scraped
-let hrefsTotal = [];
-var results = [];
+// let hrefsTotal = [];
+// var results = [];
+let TotalCreadas = [];
 
-//for (let index = 1; index <= total; index++) { -- Para recorrer todas las paginas
-  (async function main() {
+let scraptHD = true;
+let scraptNEW = true;
+
+if (scraptHD) {
+  // hrefsTotal = [];
+  let hrefs1 = [];
+  for (let index = 1; index <= total; index++) {
+    hrefs1 = [];
+    //-- Para recorrer todas las paginas
+    (async function main() {
+      try {
+        // const browser = await puppeteer.launch( {headless: false, ignoreHTTPSErrors: true, defaultViewport: null });
+        const browser = await puppeteer.launch();
+        const [page] = await browser.pages();
+        await page.goto("https://todotorrents.net/peliculas/hd/page/" + index); //-- Para recrrer todas las peliculas HD
+
+        // way 1
+        hrefs1 = await page.evaluate(() =>
+          Array.from(document.querySelectorAll(".card-body a[href]"), (a) =>
+            a.getAttribute("href")
+          )
+        );
+
+        //  hrefsTotal = hrefsTotal.concat(hrefs1);
+        //  console.log(hrefsTotal);
+
+        for (let index2 = 0; index2 < hrefs1.length; index2++) {
+          //--para recorrer todas las peliculas de la pagina
+          await page.goto("https://todotorrents.net/" + hrefs1[index2]);
+          await page.waitForTimeout(500);
+
+          let filmHD = [];
+          filmHD = await extractedFilmHDEvaluateCall(page);
+          createFilmHD(filmHD);
+        }
+
+        await browser.close();
+      } catch (err) {
+        console.error(err);
+      }
+    })();
+  } //fin for
+  
+
+} // fin scraping HD
+
+if (scraptNEW) {
+  console.log("Inicializando scraptNEW...");
+  let hrefs2 = [];
+  (async function main2() {
     try {
-      // const browser = await puppeteer.launch( {headless: false, ignoreHTTPSErrors: true, defaultViewport: null });
-      const browser = await puppeteer.launch();
-
-      const [page] = await browser.pages();
-
-      //await page.goto("https://todotorrents.net/peliculas/hd/page/" + index); -- Para recrrer todas las peliculas HD
-      await page.goto("https://todotorrents.net/ultimos");
+      const browser2 = await puppeteer.launch();
+      const [page2] = await browser2.pages();
+      await page2.goto("https://todotorrents.net/ultimos");
 
       // way 1
-      const hrefs1 = await page.evaluate(() =>
+      hrefs2 = await page2.evaluate(() =>
         Array.from(document.querySelectorAll(".card-body a[href]"), (a) =>
           a.getAttribute("href")
         )
       );
 
-      hrefsTotal = hrefsTotal.concat(hrefs1);
-      console.log(hrefsTotal);
+      // console.log(hrefs2);
 
-        for (let index2 = 0; index2 < 15; index2++) { // -- recorro las primeras 15 peliculas novedades
-      // for (let index2 = 0; index2 < hrefs1.length; index2++) { --para recorrer todas las peliculas de la pagina
-        await page.goto("https://todotorrents.net/" + hrefs1[index2]);
-        await page.waitForTimeout(500);
-        // call and wait extractedEvaluateCall and concatenate results every iteration.
-        // Evitar añadir inserciones duplicadas en Test
-        let tabla = [];
-        tabla = await extractedEvaluateCall(page);
-        // Film.create({
-        //   title: tabla.title,
-        //   type: tabla.type,
-        //   description: tabla.description.replace("Descripción:", ""),
-        //   imagen: tabla.imagen,
-        //   releaseYear: tabla.releaseYear,
-        //   playersFilm: tabla.playersFilm.replace("Actores:", ""),
-        //   format: tabla.format.replace("Formato:", ""),
-        //   size: tabla.size.replace("Tamaño:", ""),
-        //   torrent: tabla.torrent,
-        //   urlWeb: tabla.urlWeb,
-        // });
+      for (let index2 = 0; index2 < 15; index2++) {
+        // -- recorro las primeras 15 peliculas novedades
+        await page2.goto("https://todotorrents.net/" + hrefs2[index2]);
+        await page2.waitForTimeout(500);
 
-        // way 2
-        Film.findOrCreate({
-          where: {
-            title: tabla.title,
-            format: tabla.format.replace("Formato:", ""),
-          },
-          defaults: { // set the default properties if it doesn't exist
-            title: tabla.title,
-            type: tabla.type,
-            description: tabla.description.replace("Descripción:", ""),
-            imagen: tabla.imagen,
-            releaseYear: tabla.releaseYear,
-            playersFilm: tabla.playersFilm.replace("Actores:", ""),
-            format: tabla.format.replace("Formato:", ""),
-            size: tabla.size.replace("Tamaño:", ""),
-            torrent: tabla.torrent,
-            urlWeb: tabla.urlWeb,
-          }
-        }).then(function(result) {
-          var author = result[0], // the instance of the author
-            created = result[1]; // boolean stating if it was created or not
-    
-          if (!created) { // false if author already exists and was not created.
-            console.log('Film already exists');
-          }
-          else {
-            console.log('Film created...');
-          }
+        let filmNEW = [];
+        filmNEW = await extractedFilmHDEvaluateCall(page2);
+        createFilmHD(filmNEW);
+      } // fin for
 
-        });
-
-
-      }
-      //console.log("RESULTADOS" + results);
-
-      await browser.close();
+      await browser2.close();
     } catch (err) {
       console.error(err);
     }
   })();
-//} //fin for -- àra recorrer todas las paginas
+  console.log("scraptNEW Finalizado...");
+} // fin scraping NEW
 
-async function extractedEvaluateCall(page) {
+
+async function extractedFilmHDEvaluateCall(page) {
   // just extracted same exact logic in separate function
   // this function should use async keyword in order to work and take page as argument
-  //const { Film } = require("./db");
   return page.evaluate(() => {
     let title =
       document.querySelector(".card-body h2")?.innerText || "No title";
@@ -127,14 +124,13 @@ async function extractedEvaluateCall(page) {
       (a) => a.getAttribute("href")
     ).toString();
     let urlWeb = document.location.href;
-    //let type = document.location.href.replace("https://todotorrents.net/", "");
 
-    var type_temp = urlWeb.substring(
+    let type_temp = urlWeb.substring(
       urlWeb.indexOf(".net/") + 5,
       urlWeb.lastIndexOf("/")
     );
 
-    var type = type_temp.substring(0, type_temp.lastIndexOf("/"));
+    let type = type_temp.substring(0, type_temp.lastIndexOf("/"));
 
     return {
       title,
@@ -151,7 +147,44 @@ async function extractedEvaluateCall(page) {
   });
 }
 
+
+function createFilmHD(tabla) {
+  Film.findOrCreate({
+    where: {
+      title: tabla.title,
+      format: tabla.format.replace("Formato:", ""),
+    },
+    defaults: {
+      // set the default properties if it doesn't exist
+      title: tabla.title,
+      type: tabla.type,
+      description: tabla.description.replace("Descripción:", ""),
+      imagen: tabla.imagen,
+      releaseYear: tabla.releaseYear,
+      playersFilm: tabla.playersFilm.replace("Actores:", ""),
+      format: tabla.format.replace("Formato:", ""),
+      size: tabla.size.replace("Tamaño:", ""),
+      torrent: tabla.torrent,
+      urlWeb: tabla.urlWeb,
+    },
+  }).then(function (result) {
+    var author = result[0], // the instance of the author
+      created = result[1]; // boolean stating if it was created or not
+
+    if (!created) {
+      // false if author already exists and was not created.
+      console.log("Film already exists");
+    } else {
+      console.log("Film created...");
+      TotalCreadas = TotalCreadas.concat(tabla);
+    }
+  });
+  
+}
+
+
 // Making Express listen on port 7000
 app.listen(3000, () => {
   console.log("Listening on port 3000");
 });
+
