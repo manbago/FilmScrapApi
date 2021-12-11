@@ -3,6 +3,8 @@ const Sequelize = require('sequelize');
 const FilmModel = require('./models/films');
 const UserModel = require('./models/users');
 const SerieModel = require('./models/series');
+const DocModel = require('./models/documentales');
+const VarioModel = require('./models/varios');
 // const ChapterModel = require('./models/chapters');
 
 const sequelize = new Sequelize('filmbd', 'manbago', 'rostro', {
@@ -19,6 +21,8 @@ const sequelize = new Sequelize('filmbd', 'manbago', 'rostro', {
 const Film = FilmModel(sequelize, Sequelize);
 const User = UserModel(sequelize, Sequelize);
 const Serie = SerieModel(sequelize, Sequelize);
+const Doc = DocModel(sequelize, Sequelize);
+const Vario = VarioModel(sequelize, Sequelize);
 // const Chapter = ChapterModel(sequelize, Sequelize);
 
 //sequelize.sync({ force: true })
@@ -41,6 +45,8 @@ module.exports = {
     Film,
     User,
     Serie,
+    Doc,
+    Vario,
 };
 
 

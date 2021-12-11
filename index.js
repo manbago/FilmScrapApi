@@ -6,8 +6,8 @@ const puppeteer = require("puppeteer");
 
 const app = express();
 //const router = require("express").Router();
-const { Film, createChapter } = require("./db");
-const { Serie } = require("./db");
+const { Film, Serie, Doc, Vario } = require("./db");
+//const { Serie } = require("./db");
 // const { Chapter } = require("./db");
 
 app.use(bodyParser.json());
@@ -18,8 +18,8 @@ const Sequelize = require("sequelize");
 const { decodeBase64 } = require("bcryptjs");
 
 let scraptFilmHD = false;
-let scraptNEW = false;
-let scraptSeriestHD = true;
+let scraptNEW = true;
+let scraptSeriestHD = false;
 
 const totalScrapt = 100; // Number of pages to be scraped
 const inicioScrapt = 80; // Number of pages to be scraped
@@ -102,7 +102,7 @@ if (scraptSeriestHD) {
           await pageSeries.waitForTimeout(500);
 
           let serieHD = [];
-          serieHD =  await extractedSERIE(pageSeries);
+          serieHD =  await extractedSERIE_DOC(pageSeries);
           
           //console.log(serieHD);
            createSERIE(serieHD);
@@ -148,11 +148,19 @@ if (scraptNEW) {
         } 
 
         if (hrefs2[index2].includes("serie")) {
-          componentNEW = await extractedSERIE(page2);
+          componentNEW = await extractedSERIE_DOC(page2);
           createSERIE(componentNEW);
         }
+        if (hrefs2[index2].includes("documental")) {
+          componentNEW = await extractedSERIE_DOC(page2);
+          createDOC(componentNEW);
+        }
+        if (hrefs2[index2].includes("variado")) {
+          componentNEW = await extractedSERIE_DOC(page2);
+          createVARIO(componentNEW);
+        }
         else {
-          console.log("es un doc o musica");
+          console.log("es musica");
           
         }
       } // fin for
@@ -201,31 +209,30 @@ async function extractedFilmHD(page) {
   return page.evaluate(() => {
     let title =
       document.querySelector(".card-body h2")?.innerText || "No title";
-    let description = document.querySelector(".text-justify")?.innerText || "No descrip";;
+    let description = document.querySelector(".text-justify")?.innerText || "No descrip";
     let picture = document.querySelectorAll(".card-body > img");
     let imagen = picture[0].src;
-    let releaseYear = document.querySelector(".d-inline-block p a")?.innerText || "No year";;
+    let releaseYear = document.querySelector(".d-inline-block p a")?.innerText || "No year";
     let playersFilm = document.querySelector(".mb-0")?.innerText || "No players";;
     let format =
       document.querySelector(".text-center .d-inline-block p")?.innerText ||
       "No format";
-    let size = document.querySelector(".d-inline-block .mb-0")?.innerText || "No size";;
+    let size = document.querySelector(".d-inline-block .mb-0")?.innerText || "No size";
     let torrent = Array.from(
       document.querySelectorAll(".text-center a[href]"),
       (a) => a.getAttribute("href")
     ).toString();
     let urlWeb = document.location.href;
 
-    let type_temp = urlWeb.substring(
-      urlWeb.indexOf(".net/") + 5,
-      urlWeb.lastIndexOf("/")
-    );
+    // let type_temp = urlWeb.substring(
+    //   urlWeb.indexOf(".net/") + 5,
+    //   urlWeb.lastIndexOf("/")
+    // );
 
-    let type = type_temp.substring(0, type_temp.lastIndexOf("/"));
+    // let type = type_temp.substring(0, type_temp.lastIndexOf("/"));
 
     return {
       title,
-      type,
       description,
       imagen,
       releaseYear,
@@ -241,7 +248,7 @@ async function extractedFilmHD(page) {
 
 
 
-async function extractedSERIE(page) {
+async function extractedSERIE_DOC(page) {
   // just extracted same exact logic in separate function
   // this function should use async keyword in order to work and take page as argument
   return page.evaluate(() => {
@@ -256,6 +263,8 @@ async function extractedSERIE(page) {
       document.querySelectorAll(".text-center a[href]"),
       (a) => a.getAttribute("href")
     ).toString();
+
+    let size = document.querySelector(".d-inline-block .mb-0")?.innerText || "No size";
     
     const tbody = document.querySelector('tbody');
    // let fecha = Array.from(tbody.querySelectorAll("td")).innerText;// tbody.querySelectorAll("td")[0].innerText;
@@ -270,12 +279,12 @@ async function extractedSERIE(page) {
  let episodios = mitemp.toString();
   let urlWeb = document.location.href;
 
-    let type_temp = urlWeb.substring(
-      urlWeb.indexOf(".fit/") + 6,
-      urlWeb.lastIndexOf("/") - 6
-    );
+    // let type_temp = urlWeb.substring(
+    //   urlWeb.indexOf(".fit/") + 6,
+    //   urlWeb.lastIndexOf("/") - 6
+    // );
 
-    let type = type_temp.substring(0, type_temp.lastIndexOf("/"));
+    // let type = type_temp.substring(0, type_temp.lastIndexOf("/"));
 
     let numchapters_temp2 = numchapters_temp.replace("Episodios: ", "");
     let numchapters = parseInt(numchapters_temp2);
@@ -286,7 +295,6 @@ async function extractedSERIE(page) {
     
     return {
       title,
-      type,
       description,
       imagen,
       numchapters,
@@ -294,6 +302,7 @@ async function extractedSERIE(page) {
       torrent,
       episodios,
       urlWeb,
+      size
     };
   });
 }
@@ -309,7 +318,7 @@ function createFilmHD(tabla) {
     defaults: {
       // set the default properties if it doesn't exist
       title: tabla.title,
-      type: tabla.type,
+      type: "pelicula",
       description: tabla.description.replace("Descripción:", ""),
       imagen: tabla.imagen,
       releaseYear: tabla.releaseYear,
@@ -339,16 +348,16 @@ function createSERIE(tabla) {
   Serie.findOrCreate({
     where: {
       title: tabla.title,
-      format: tabla.format, //?.replace("Formato:", "") || tabla.format,
+      format: tabla.format.replace("Formato:", ""), //|| tabla.format,
     },
     defaults: {
       // set the default properties if it doesn't exist
       title: tabla.title,
-      type: tabla.type,
+      type: "serie",
       description: tabla.description?.replace("Descripción:", "") || tabla.description,
       imagen: tabla.imagen,
       numchapters: tabla.numchapters,
-      format: tabla.format?.replace("Formato:", "") || tabla.format,
+      format: tabla.format, //?.replace("Formato:", "") || tabla.format,
       torrent: tabla.torrent,
       episodios: tabla.episodios,
       urlWeb: tabla.urlWeb,
@@ -369,6 +378,70 @@ function createSERIE(tabla) {
 }
 
 
+function createDOC(tabla) {
+  Doc.findOrCreate({
+    where: {
+      title: tabla.title,
+      format: tabla.format.replace("Formato:", ""), // || tabla.format,
+    },
+    defaults: {
+      // set the default properties if it doesn't exist
+      title: tabla.title,
+      type: "documental",
+      description: tabla.description?.replace("Descripción:", "") || tabla.description,
+      imagen: tabla.imagen,
+      numchapters: tabla.numchapters,
+      format: tabla.format?.replace("Formato:", "") || tabla.format,
+      torrent: tabla.torrent,
+      episodios: tabla.episodios,
+      urlWeb: tabla.urlWeb,
+    },
+  }).then(function (result) {
+    var author = result[0], // the instance of the author
+      created = result[1]; // boolean stating if it was created or not
+
+    if (!created) {
+      // false if author already exists and was not created.
+      console.log("Doc already exists");
+    } else {
+      console.log("Doc created..."+tabla.fecha);
+      //TotalCreadas = TotalCreadas.concat(tabla);
+    }
+  });
+  
+}
+
+
+function createVARIO(tabla) {
+  Vario.findOrCreate({
+    where: {
+      title: tabla.title,
+    },
+    defaults: {
+      // set the default properties if it doesn't exist
+      title: tabla.title,
+      type: "vario",
+      description: tabla.description?.replace("Descripción:", "") || tabla.description,
+      imagen: tabla.imagen,
+      size: tabla.size.replace("Tamaño:", ""),
+      fecha: tabla.format?.replace("Fecha:", "") || tabla.format,
+      torrent: tabla.torrent,
+      urlWeb: tabla.urlWeb,
+    },
+  }).then(function (result) {
+    var author = result[0], // the instance of the author
+      created = result[1]; // boolean stating if it was created or not
+
+    if (!created) {
+      // false if author already exists and was not created.
+      console.log("Vario already exist..."+tabla.size);
+    } else {
+      console.log("Vario created..."+tabla.size);
+      //TotalCreadas = TotalCreadas.concat(tabla);
+    }
+  });
+  
+}
 
 // Making Express listen on port 7000
 app.listen(3000, () => {
