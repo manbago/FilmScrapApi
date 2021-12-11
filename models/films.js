@@ -16,7 +16,7 @@ module.exports = (sequelize, type) => {
         allowNull: true,
       },
       description: {
-        type: type.STRING,
+        type: type.STRING(1234),
         allowNull: false,
       },
       imagen: {
@@ -28,7 +28,7 @@ module.exports = (sequelize, type) => {
         allowNull: true,
       },
       playersFilm: {
-        type: type.STRING,
+        type: type.STRING(1234),
         allowNull: true,
       },
       format: {

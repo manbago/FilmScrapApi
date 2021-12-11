@@ -1,6 +1,6 @@
 module.exports = (sequelize, type) => {
     return sequelize.define(
-      "documentales",
+      "series",
       {
         id: {
           type: type.INTEGER,
@@ -16,15 +16,15 @@ module.exports = (sequelize, type) => {
           allowNull: true,
         },
         description: {
-          type: type.STRING,
+          type: type.STRING(1234),
           allowNull: false,
         },
         imagen: {
           type: type.STRING,
           allowNull: true,
         },
-        numEpisodios: {
-          type: type.STRING,
+        numchapters: {
+          type: type.INTEGER,
           allowNull: true,
         },
         format: {
@@ -32,7 +32,11 @@ module.exports = (sequelize, type) => {
           primaryKey: true,
         },
         torrent: {
-          type: type.STRING,
+          type: type.STRING(1234),
+          allowNull: true,
+        },
+        episodios: {
+          type: type.STRING(1234),
           allowNull: true,
         },
         urlWeb: {
@@ -41,7 +45,7 @@ module.exports = (sequelize, type) => {
         },
       },
       {
-        timestamps: false,
+        timestamps: true,
       }
     );
   };

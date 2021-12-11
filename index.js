@@ -2,33 +2,36 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const apiRouter = require("./routes/api");
 const puppeteer = require("puppeteer");
-require("./db");
+ require("./db");
 
 const app = express();
-const router = require("express").Router();
-const { Film } = require("./db");
-const { Doc } = require("./db");
+//const router = require("express").Router();
+const { Film, createChapter } = require("./db");
+const { Serie } = require("./db");
+// const { Chapter } = require("./db");
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use("/api", apiRouter);
 
 const Sequelize = require("sequelize");
-const Op = Sequelize.Op;
+const { decodeBase64 } = require("bcryptjs");
 
-// Launching the Puppeteer controlled headless browser and navigate to the website
-const total = 1; // Number of pages to be scraped
-// let hrefsTotal = [];
+let scraptFilmHD = false;
+let scraptNEW = false;
+let scraptSeriestHD = true;
+
+const totalScrapt = 100; // Number of pages to be scraped
+const inicioScrapt = 80; // Number of pages to be scraped
+let hrefsTotal = [];
+
 // var results = [];
 let TotalCreadas = [];
 
-let scraptHD = false;
-let scraptNEW = true;
-
-if (scraptHD) {
+if (scraptFilmHD) {
   // hrefsTotal = [];
   let hrefs1 = [];
-  for (let index = 1; index <= total; index++) {
+  for (let index = inicioScrapt; index <= totalScrapt; index++) {
     hrefs1 = [];
     //-- Para recorrer todas las paginas
     (async function main() {
@@ -67,6 +70,53 @@ if (scraptHD) {
   
 } // fin IF scraping HD
 
+if (scraptSeriestHD) {
+  // hrefsTotal = [];
+  let hrefsSeries = [];
+  for (let index = inicioScrapt; index <= totalScrapt; index++) {
+    
+    hrefsSeries = [];
+    //-- Para recorrer todas las paginas
+    (async function mainSeries() {
+      try {
+        // const browser = await puppeteer.launch( {headless: false, ignoreHTTPSErrors: true, defaultViewport: null });
+        const browserSeries = await puppeteer.launch();
+        const [pageSeries] = await browserSeries.pages();
+        await pageSeries.goto("https://dontorrent.fit/series/page/" + index); //-- Para recrrer todas las peliculas HD
+        await pageSeries.waitForTimeout(500);
+        // way 1
+        hrefsSeries = await pageSeries.evaluate(() =>
+          Array.from(document.querySelectorAll(".noticiasContent a[href]"), (a) =>
+            a.getAttribute("href")
+          )
+        );
+        
+
+          hrefsTotal = hrefsTotal.concat(hrefsSeries.slice(0, - 5));
+          console.log(hrefsTotal);
+          
+        for (let index2 = 0; index2 < hrefsSeries.slice(0, - 5).length; index2++) {
+         
+          //--para recorrer todas las peliculas de la pagina
+          await pageSeries.goto("https://dontorrent.fit/" + hrefsSeries[index2]);
+          await pageSeries.waitForTimeout(500);
+
+          let serieHD = [];
+          serieHD =  await extractedSERIE(pageSeries);
+          
+          //console.log(serieHD);
+           createSERIE(serieHD);
+        }
+
+        await browserSeries.close();
+      } catch (err) {
+        console.error(err);
+      }
+    })();
+  } //fin for
+  
+} // fin IF scraping HD
+
 if (scraptNEW) {
   console.log("Inicializando scraptNEW...");
   let hrefs2 = [];
@@ -74,7 +124,7 @@ if (scraptNEW) {
     try {
       const browser2 = await puppeteer.launch();
       const [page2] = await browser2.pages();
-      await page2.goto("https://todotorrents.net/ultimos");
+      await page2.goto("https://dontorrent.fit/ultimos");
 
       // way 1
       hrefs2 = await page2.evaluate(() =>
@@ -87,7 +137,7 @@ if (scraptNEW) {
 
       for (let index2 = 0; index2 < hrefs2.length; index2++) {
         // -- recorro las primeras 15 peliculas novedades
-        await page2.goto("https://todotorrents.net/" + hrefs2[index2]);
+        await page2.goto("https://dontorrent.fit/" + hrefs2[index2]);
         await page2.waitForTimeout(500);
 
         let componentNEW = [];
@@ -96,12 +146,13 @@ if (scraptNEW) {
           componentNEW = await extractedFilmHD(page2);
           createFilmHD(componentNEW);
         } 
+
         if (hrefs2[index2].includes("serie")) {
-          componentNEW = await extractedFilmSERIE(page2);
-          createFilmSERIE(componentNEW);
+          componentNEW = await extractedSERIE(page2);
+          createSERIE(componentNEW);
         }
         else {
-          console.log("es una serie o musica");
+          console.log("es un doc o musica");
           
         }
       } // fin for
@@ -115,21 +166,50 @@ if (scraptNEW) {
 } // fin IF scraping NEW
 
 
+
+function createCHAPTER(tabla) {
+  Chapter.findOrCreate({
+    where: {
+      // title: title,
+       //chapter: tabla.td_chapter,
+    },
+    defaults: {
+      // set the default properties if it doesn't exist
+      chapter: tabla.title,
+      //fecha: tabla.fecha,
+      torrent: tabla.torrent,
+    },
+  }).then(function (result) {
+    var author = result[0], // the instance of the author
+      created = result[1]; // boolean stating if it was created or not
+
+    if (!created) {
+      // false if author already exists and was not created.
+      console.log("Capitulo already exists");
+    } else {
+      console.log("Capitulo created..."+tabla.numchapters);
+      TotalCreadas = TotalCreadas.concat(tabla);
+    }
+  });
+  
+}
+
+
 async function extractedFilmHD(page) {
   // just extracted same exact logic in separate function
   // this function should use async keyword in order to work and take page as argument
   return page.evaluate(() => {
     let title =
       document.querySelector(".card-body h2")?.innerText || "No title";
-    let description = document.querySelector(".text-justify").innerText;
+    let description = document.querySelector(".text-justify")?.innerText || "No descrip";;
     let picture = document.querySelectorAll(".card-body > img");
     let imagen = picture[0].src;
-    let releaseYear = document.querySelector(".d-inline-block p a").innerText;
-    let playersFilm = document.querySelector(".mb-0").innerText;
+    let releaseYear = document.querySelector(".d-inline-block p a")?.innerText || "No year";;
+    let playersFilm = document.querySelector(".mb-0")?.innerText || "No players";;
     let format =
       document.querySelector(".text-center .d-inline-block p")?.innerText ||
       "No format";
-    let size = document.querySelector(".d-inline-block .mb-0").innerText;
+    let size = document.querySelector(".d-inline-block .mb-0")?.innerText || "No size";;
     let torrent = Array.from(
       document.querySelectorAll(".text-center a[href]"),
       (a) => a.getAttribute("href")
@@ -158,39 +238,61 @@ async function extractedFilmHD(page) {
   });
 }
 
-async function extractedFilmSERIE(page) {
+
+
+
+async function extractedSERIE(page) {
   // just extracted same exact logic in separate function
   // this function should use async keyword in order to work and take page as argument
   return page.evaluate(() => {
     let title =
       document.querySelector(".card-body h2")?.innerText || "No title";
-    let description = document.querySelector(".text-justify").innerText;
+    let description = document.querySelector(".text-justify")?.innerText || "No descri";
     let picture = document.querySelectorAll(".card-body > img");
-    let imagen = picture[0].src;
-    let format =
-      document.querySelector(".text-center .d-inline-block p")?.innerText ||
-      "No format";
+    let imagen = picture[0]?.src || "No image";
+    let format = document.querySelectorAll(".d-inline-block p")[0]?.innerText || "No format";
+    let numchapters_temp = document.querySelectorAll(".d-inline-block p")[1]?.innerText || "No format";
     let torrent = Array.from(
       document.querySelectorAll(".text-center a[href]"),
       (a) => a.getAttribute("href")
     ).toString();
-    let urlWeb = document.location.href;
+    
+    const tbody = document.querySelector('tbody');
+   // let fecha = Array.from(tbody.querySelectorAll("td")).innerText;// tbody.querySelectorAll("td")[0].innerText;
+    //let nameEpisode = tbody.querySelectorAll("td")[2].innerText;
+
+      let mitemp = [];
+    var tds = document.querySelectorAll('tbody td'), i;
+    for(i = 0; i < tds.length; ++i) {
+      mitemp = mitemp.concat(tds[i].innerText);
+    // do something here
+}
+ let episodios = mitemp.toString();
+  let urlWeb = document.location.href;
 
     let type_temp = urlWeb.substring(
-      urlWeb.indexOf(".net/") + 5,
+      urlWeb.indexOf(".fit/") + 6,
       urlWeb.lastIndexOf("/") - 6
     );
 
     let type = type_temp.substring(0, type_temp.lastIndexOf("/"));
 
+    let numchapters_temp2 = numchapters_temp.replace("Episodios: ", "");
+    let numchapters = parseInt(numchapters_temp2);
+
+    // return {
+    //   title
+    // };
+    
     return {
       title,
       type,
       description,
       imagen,
+      numchapters,
       format,
-
       torrent,
+      episodios,
       urlWeb,
     };
   });
@@ -233,20 +335,22 @@ function createFilmHD(tabla) {
 }
 
 
-function createFilmSERIE(tabla) {
-  Doc.findOrCreate({
+function createSERIE(tabla) {
+  Serie.findOrCreate({
     where: {
       title: tabla.title,
-      format: tabla.format.replace("Formato:", ""),
+      format: tabla.format, //?.replace("Formato:", "") || tabla.format,
     },
     defaults: {
       // set the default properties if it doesn't exist
       title: tabla.title,
       type: tabla.type,
-      description: tabla.description.replace("Descripción:", ""),
+      description: tabla.description?.replace("Descripción:", "") || tabla.description,
       imagen: tabla.imagen,
-      format: tabla.format.replace("Formato:", ""),
+      numchapters: tabla.numchapters,
+      format: tabla.format?.replace("Formato:", "") || tabla.format,
       torrent: tabla.torrent,
+      episodios: tabla.episodios,
       urlWeb: tabla.urlWeb,
     },
   }).then(function (result) {
@@ -255,14 +359,16 @@ function createFilmSERIE(tabla) {
 
     if (!created) {
       // false if author already exists and was not created.
-      console.log("Doc already exists");
+      console.log("Serie already exists");
     } else {
-      console.log("Doc created...");
-      TotalCreadas = TotalCreadas.concat(tabla);
+      console.log("Serie created..."+tabla.fecha);
+      //TotalCreadas = TotalCreadas.concat(tabla);
     }
   });
   
 }
+
+
 
 // Making Express listen on port 7000
 app.listen(3000, () => {
