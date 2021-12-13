@@ -20,13 +20,20 @@ const { decodeBase64 } = require("bcryptjs");
 let scraptFilmHD = false;
 let scraptNEW = true;
 let scraptSeriestHD = false;
+let scraptDocsHD = false;
 
-const totalScrapt = 100; // Number of pages to be scraped
-const inicioScrapt = 80; // Number of pages to be scraped
+const totalScrapt = 35; // Number of pages to be scraped
+const inicioScrapt = 1; // Number of pages to be scraped
 let hrefsTotal = [];
 
 // var results = [];
 let TotalCreadas = [];
+
+function sleep(miliseconds) {
+  var currentTime = new Date().getTime();
+  while (currentTime + miliseconds >= new Date().getTime()) {
+  }
+}
 
 if (scraptFilmHD) {
   // hrefsTotal = [];
@@ -99,13 +106,65 @@ if (scraptSeriestHD) {
          
           //--para recorrer todas las peliculas de la pagina
           await pageSeries.goto("https://dontorrent.fit/" + hrefsSeries[index2]);
-          await pageSeries.waitForTimeout(500);
+          await pageSeries.waitForTimeout(1000);
 
           let serieHD = [];
           serieHD =  await extractedSERIE_DOC(pageSeries);
           
           //console.log(serieHD);
            createSERIE(serieHD);
+        }
+
+        await browserSeries.close();
+      } catch (err) {
+        console.error(err);
+      }
+    })();
+  } //fin for
+  
+} // fin IF scraping HD
+
+
+if (scraptDocsHD) {
+  // hrefsTotal = [];
+  let hrefsDocs = [];
+  let totalPages = []
+  for (let index = inicioScrapt; index <= totalScrapt; index++) {
+    
+    hrefsDocs = [];
+
+    //-- Para recorrer todas las paginas
+    (async function mainSeries() {
+      try {
+        // const browser = await puppeteer.launch( {headless: false, ignoreHTTPSErrors: true, defaultViewport: null });
+        const browserSeries = await puppeteer.launch();
+        const [pageSeries] = await browserSeries.pages();
+        await pageSeries.waitForTimeout(1000);
+        await pageSeries.goto("https://dontorrent.fit/documentales/page/" + index); //-- Para recrrer todas las peliculas HD
+        await pageSeries.waitForTimeout(1000);
+        // way 1
+        hrefsDocs = await pageSeries.evaluate(() =>
+          Array.from(document.querySelectorAll(".noticiasContent a[href]"), (a) =>
+            a.getAttribute("href")
+          )
+        );
+        
+
+          hrefsTotal = hrefsTotal.concat(hrefsDocs.slice(0, - 1));
+          console.log(hrefsTotal);
+          
+        for (let index2 = 0; index2 < hrefsDocs.slice(0, - 1).length; index2++) {
+         
+          //--para recorrer todas las peliculas de la pagina
+          await pageSeries.goto("https://dontorrent.fit/" + hrefsDocs[index2]);
+          await pageSeries.waitForTimeout(1000);
+
+          
+          let docHD = [];
+          docHD =  await extractedSERIE_DOC(pageSeries);
+          
+          //console.log(serieHD);
+           createDOC(docHD);
         }
 
         await browserSeries.close();
@@ -258,6 +317,7 @@ async function extractedSERIE_DOC(page) {
     let picture = document.querySelectorAll(".card-body > img");
     let imagen = picture[0]?.src || "No image";
     let format = document.querySelectorAll(".d-inline-block p")[0]?.innerText || "No format";
+    format = format.replace("Formato:", "");
     let numchapters_temp = document.querySelectorAll(".d-inline-block p")[1]?.innerText || "No format";
     let torrent = Array.from(
       document.querySelectorAll(".text-center a[href]"),
@@ -278,6 +338,7 @@ async function extractedSERIE_DOC(page) {
 }
  let episodios = mitemp.toString();
   let urlWeb = document.location.href;
+  
 
     // let type_temp = urlWeb.substring(
     //   urlWeb.indexOf(".fit/") + 6,
@@ -348,7 +409,7 @@ function createSERIE(tabla) {
   Serie.findOrCreate({
     where: {
       title: tabla.title,
-      format: tabla.format.replace("Formato:", ""), //|| tabla.format,
+      format: tabla.format, //|| tabla.format,
     },
     defaults: {
       // set the default properties if it doesn't exist
