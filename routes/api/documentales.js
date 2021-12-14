@@ -1,6 +1,6 @@
 const router = require("express").Router();
 
-const { Serie } = require("../../db");
+const { Doc } = require("../../db");
 const Sequelize = require("sequelize");
 const Op = Sequelize.Op;
 
@@ -30,20 +30,19 @@ router.get("/", async (req, res) => {
     size = sizeAsNumber;
   }
 
-  const data = await Serie.findAndCountAll({
+  const data = await Doc.findAndCountAll({
     order: [["id", "DESC"]],
     atributes: [
-      "id",
-      "title",
-      "description",
-      "imagen",
-      "numchapters",
-      "releaseYear",
-      "format",
-      "torrent",
-      "episodios",
-      "urlWeb",
-    ],
+        "id",
+        "title",
+        "description",
+        "imagen",
+        "numchapters",
+        "format",
+        "torrent",
+        "episodios",
+        "urlWeb",
+      ],
     limit: size,
     offset: page * size,
   });
@@ -51,26 +50,26 @@ router.get("/", async (req, res) => {
   res.send({
     content: data.rows,
     totalPages: Math.ceil(data.count / size),
-    totalSeries: data.count,
+    totalDocs: data.count,
     thisPage: page,
   });
 });
 
 router.post("/", async (req, res) => {
-  const film = await Serie.create(req.body);
-  res.json(film);
+  const doc = await Doc.create(req.body);
+  res.json(doc);
 });
 
-router.put("/:serieId", async (req, res) => {
-  await Serie.update(req.body, {
-    where: { id: req.params.serieId },
+router.put("/:docId", async (req, res) => {
+  await Doc.update(req.body, {
+    where: { id: req.params.docId },
   });
   res.json({ success: "se ha modificado" });
 });
 
-router.delete("/:serieId", async (req, res) => {
-  await Serie.destroy({
-    where: { id: req.params.filmId },
+router.delete("/:docId", async (req, res) => {
+  await Doc.destroy({
+    where: { id: req.params.docId },
   });
   res.json({ success: "se ha eliminado" });
 });
@@ -79,33 +78,32 @@ router.get("/search", async (req, res) => {
   let { term } = req.query;
   //term = term.toLowerCase();
 
-  const data = await Serie.findAndCountAll({
+  const data = await Doc.findAndCountAll({
     atributes: [
-        "id",
-        "title",
-        "description",
-        "imagen",
-        "numchapters",
-        "releaseYear",
-        "format",
-        "torrent",
-        "episodios",
-        "urlWeb",
-      ],
+      "id",
+      "title",
+      "description",
+      "imagen",
+      "numchapters",
+      "format",
+      "torrent",
+      "episodios",
+      "urlWeb",
+    ],
     where: { title: { [Op.like]: `%${term}%` } },
   });
 
   res.send({
     content: data.rows,
-    totalSeries: data.count,
+    totalDocs: data.count,
   });
 });
 
-router.get("/:serieId", async (req, res) => {
-  console.log(req.params.serieId);
-  const serie = await Serie.findByPk(req.params.serieId);
-  console.log(serie);
-  res.send(serie);
+router.get("/:docId", async (req, res) => {
+  console.log(req.params.docId);
+  const doc = await Doc.findByPk(req.params.docId);
+  console.log(doc);
+  res.send(doc);
 });
 
 module.exports = router;

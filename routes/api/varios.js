@@ -1,6 +1,6 @@
 const router = require("express").Router();
 
-const { Serie } = require("../../db");
+const { Vario } = require("../../db");
 const Sequelize = require("sequelize");
 const Op = Sequelize.Op;
 
@@ -30,18 +30,16 @@ router.get("/", async (req, res) => {
     size = sizeAsNumber;
   }
 
-  const data = await Serie.findAndCountAll({
+  const data = await Vario.findAndCountAll({
     order: [["id", "DESC"]],
     atributes: [
       "id",
       "title",
       "description",
       "imagen",
-      "numchapters",
-      "releaseYear",
-      "format",
+      "size",
+      "fecha",
       "torrent",
-      "episodios",
       "urlWeb",
     ],
     limit: size,
@@ -51,26 +49,26 @@ router.get("/", async (req, res) => {
   res.send({
     content: data.rows,
     totalPages: Math.ceil(data.count / size),
-    totalSeries: data.count,
+    totalVarios: data.count,
     thisPage: page,
   });
 });
 
 router.post("/", async (req, res) => {
-  const film = await Serie.create(req.body);
-  res.json(film);
+  const varios = await Vario.create(req.body);
+  res.json(varios);
 });
 
-router.put("/:serieId", async (req, res) => {
-  await Serie.update(req.body, {
-    where: { id: req.params.serieId },
+router.put("/:varioId", async (req, res) => {
+  await Vario.update(req.body, {
+    where: { id: req.params.varioId },
   });
   res.json({ success: "se ha modificado" });
 });
 
-router.delete("/:serieId", async (req, res) => {
-  await Serie.destroy({
-    where: { id: req.params.filmId },
+router.delete("/:varioId", async (req, res) => {
+  await Vario.destroy({
+    where: { id: req.params.varioId },
   });
   res.json({ success: "se ha eliminado" });
 });
@@ -79,17 +77,15 @@ router.get("/search", async (req, res) => {
   let { term } = req.query;
   //term = term.toLowerCase();
 
-  const data = await Serie.findAndCountAll({
+  const data = await Vario.findAndCountAll({
     atributes: [
         "id",
         "title",
         "description",
         "imagen",
-        "numchapters",
-        "releaseYear",
-        "format",
+        "size",
+        "fecha",
         "torrent",
-        "episodios",
         "urlWeb",
       ],
     where: { title: { [Op.like]: `%${term}%` } },
@@ -97,15 +93,15 @@ router.get("/search", async (req, res) => {
 
   res.send({
     content: data.rows,
-    totalSeries: data.count,
+    totalVarios: data.count,
   });
 });
 
-router.get("/:serieId", async (req, res) => {
-  console.log(req.params.serieId);
-  const serie = await Serie.findByPk(req.params.serieId);
-  console.log(serie);
-  res.send(serie);
+router.get("/:varioId", async (req, res) => {
+  console.log(req.params.variosId);
+  const vario = await Vario.findByPk(req.params.varioId);
+  console.log(vario);
+  res.send(vario);
 });
 
 module.exports = router;
